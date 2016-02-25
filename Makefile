@@ -104,6 +104,7 @@ BIN =\
 	env\
 	expand\
 	expr\
+	factor\
 	false\
 	find\
 	flock\
@@ -188,6 +189,9 @@ all: $(BIN)
 $(BIN): $(LIB) $(@:=.o)
 
 $(OBJ): $(HDR) config.mk
+
+sbase: LDFLAGS += -lgmp -lpthread
+factor: LDFLAGS += -lgmp -lpthread
 
 .o:
 	$(CC) $(LDFLAGS) -o $@ $< $(LIB)

@@ -34,6 +34,7 @@ The following tools are implemented:
 =*|o env             .
 #*|o expand          .
 #*|o expr            .
+ *   factor          .
 =*|o false           .
 =    find            .
 =* x flock           .
