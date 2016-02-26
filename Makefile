@@ -190,8 +190,8 @@ $(BIN): $(LIB) $(@:=.o)
 
 $(OBJ): $(HDR) config.mk
 
-sbase: LDFLAGS += -lgmp -lpthread
-factor: LDFLAGS += -lgmp -lpthread
+sbase: LDFLAGS += -ltommath
+factor: LDFLAGS += -ltommath
 
 .o:
 	$(CC) $(LDFLAGS) -o $@ $< $(LIB)

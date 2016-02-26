@@ -7,8 +7,6 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl c Ar N
-.Op Fl p Ar N
-.Op Fl q
 .Op Ar number ...
 .Sh DESCRIPTION
 .Nm
@@ -24,17 +22,6 @@ line by line from stdin.
 Select the certainty for prime factors. The probably
 that a composite number will be listed as a prime
 factor will be less than 4^(-\fIN\fP).
-.It Fl p Ar N
-Use at most
-.Ar N
-threads to factor each
-.Ar number .
-This is seldom useful.
-Note, the input numbers are not factored concurrently,
-only there factors.
-.It Fl q
-Mark factors with \(aq?\(aq if it is not certain that
-they are prime.
 .El
 .Sh EXIT STATUS
 .Bl -tag -width Ds
@@ -46,17 +33,5 @@ An error occurred.
 .Sh NOTES
 The factors are not output in ascending order,
 but in order of discovery.
-.Pp
-The prime test is two-stage. The first stage
-is unaffected by the
-.Fl c
-flag. In this stage it is possible that the
-number is designated as a prime with complete
-certainty. In second stage, which is affected
-by the
-.Fl c
-flag, the number cannot be designated as a
-prime with complete certainty.
 .Sh SEE ALSO
 .Xr bc 1
-
