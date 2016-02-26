@@ -12,7 +12,6 @@
 
 static int certainty = 5;
 
-#define shift_right(r, x, steps)    mp_div_2d(x, steps, r, 0)
 static int prime_test(mp_int *x)     { int ret; mp_prime_is_prime(x, certainty, &ret); return ret;}
 #define to_string(x)                (mp_todecimal(x, strbuf), strbuf)
 #define div_mod(q, r, n, d)         mp_div(n, d, q, r)
@@ -50,7 +49,7 @@ struct thread_data {
 	size_t root_order;
 };
 
-#define LIST_CONSTANTS X(3) X(5) X(7) X(11) X(13) X(17)
+#define LIST_CONSTANTS X(2) X(3) X(5) X(7) X(11) X(13) X(17)
 static bigint_t constants[18];
 
 #define _5(x) x, x, x, x, x
@@ -304,27 +303,13 @@ factor(struct context *ctx, char *integer_str, bigint_t reusable_seed, bigint_t 
 	while (*integer_str == '0' && *integer_str != 0) integer_str++;
 	printf("%s:", integer_str);
 
-	/* Behave like GNU factor: print empty set for 0 and 1, and pretend 0 is positive. */
+	/* Behave like GNU (others too?) factor: print empty set for 0 and 1, and pretend 0 is positive. */
 	if (zcmp_i(integer, 1) <= 0)
 		goto done;
 
-	/* Remove factors of two. */
-	power = mp_cnt_lsb(integer);
-	if (power > 0) {
-		shift_right(integer, integer, power);
-		while (power--) {
-			printf(" 2");
-#ifdef DEBUG
-			zmul_i(result, result, 2);
-#endif
-		}
-		if (is_factorised(integer))
-			goto done;
-	}
-
 	context_reinit(ctx, integer);
 
-	/* Remove factors of other tiny primes. */
+	/* Remove factors of tiny primes. */
 #ifdef DEBUG
 # define print_prime(factor)  printf(" "#factor), zmul_i(result, result, factor);
 #else
