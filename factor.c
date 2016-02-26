@@ -24,9 +24,6 @@ static int prime_test(mp_int *x)     { int ret; mp_prime_is_prime(x, certainty, 
 #define zadd_i(r, a, b)             (zset_i(ctx->tmp, b), zadd(r, a, ctx->tmp))
 #define zsub(r, a, b)               mp_sub(a, b, r)
 #define zmod(r, a, b)               mp_mod(a, b, r)
-#define zsqrt(r, x)                 mp_sqrt(x, r)
-static int zsqrt_test(mp_int *r, mp_int *x)  { int ret; mp_is_square(x, &ret); zsqrt(r, x); return ret; }
-/*# define zset(r, x)                  mp_copy(x, r) /\* TODO Is this really correct? */
 static void zset(mp_int *r, mp_int *x)  { mp_zero(r); zadd(r, r, x); }
 #define zset_i(r, x)                mp_set_int(r, x)
 #define zcmp(a, b)                  mp_cmp(a, b)
@@ -44,7 +41,7 @@ struct context {
 	bigint_t div_n, div_q, div_r, div_d;
 	bigint_t *div_stack;
 	size_t div_stack_size;
-	bigint_t factor, d, x, y, conj_a, conj_b;
+	bigint_t factor, d, x, y;
 	bigint_t tmp;
 };
 
@@ -111,8 +108,6 @@ context_init(struct context *ctx, bigint_t integer)
 	mp_init(ctx->d);
 	mp_init(ctx->x);
 	mp_init(ctx->y);
-	mp_init(ctx->conj_a);
-	mp_init(ctx->conj_b);
 
 	mp_init(ctx->tmp);
 }
@@ -149,8 +144,6 @@ context_free(struct context *ctx)
 	mp_clear(ctx->d);
 	mp_clear(ctx->x);
 	mp_clear(ctx->y);
-	mp_clear(ctx->conj_a);
-	mp_clear(ctx->conj_b);
 
 	mp_clear(ctx->tmp);
 }
@@ -208,9 +201,14 @@ iterated_division(struct context *ctx, bigint_t remainder, bigint_t numerator, b
 static void
 subfactor_proper(struct context *ctx, bigint_t factor, bigint_t c, bigint_t next, size_t root_order)
 {
+	/*
+	 * Pollard's rho algorithm with Floyd's cycle-finding algorithm and seed.
+	 * A special-purpose integer factorisation algorithm used for factoring
+	 * integers with small factors.
+	 */
+
 	size_t bits, cd;
 	bigint_t *d = &ctx->d, *x = &ctx->x, *y = &ctx->y;
-	bigint_t *conj_a = &ctx->conj_a, *conj_b = &ctx->conj_b;
 	long seed;
 
 beginning:
@@ -225,28 +223,6 @@ beginning:
 	zset(*y, *x);
 
 	for (;;) {
-		/*
-		 * There may exist a number b = (A = ⌊√n⌋ + 1)² − n such that B = √b is an integer
-		 * in which case n = (A − B)(A + B)  [n is(!) odd composite]. If not, the only the
-		 * trivial iteration of A (A += 1) seems to be the one not consuming your entire
-		 * CPU and it is also guaranteed to find the factors, but it is just so slow.
-		 */
-		zsqrt(*conj_a, factor);
-		zadd_i(*conj_a, *conj_a, 1);
-		zmul(*conj_b, *conj_a, *conj_a);
-		zsub(*conj_b, *conj_b, factor);
-
-		if (zsqrt_test(*conj_b, *conj_b)) {
-			zadd(next, *conj_a, *conj_b);
-			zsub(factor, *conj_a, *conj_b);
-			subfactor(ctx, next, root_order, 0, 0);
-			subfactor(ctx, factor, root_order, c, next);
-			break;
-		}
-
-		/* Pollard's rho algorithm with Floyd's cycle-finding algorithm and seed.
-		 * A special-purpose integer factorisation algorithm used for factoring
-		 * integers with small factors. */
 		do {
 			zmul(*x, *x, *x), zadd_i(*x, *x, seed);
 			zmul(*y, *y, *y), zadd_i(*y, *y, seed);
@@ -374,7 +350,7 @@ factor(struct context *ctx, char *integer_str, bigint_t reusable_seed, bigint_t 
 
 #ifdef DEBUG
 	if (zcmp(result, expected))
-		fprintf(stderr, "\033[1;31mIncorrect factorisation of %s\033[m\n", to_string(expected));
+		fprintf(stderr, "\033[1;31mIncorrect factorization of %s\033[m\n", to_string(expected));
 #endif
 
 done:
