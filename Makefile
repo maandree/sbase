@@ -19,7 +19,8 @@ HDR =\
 	sha512-256.h\
 	text.h\
 	utf.h\
-	util.h
+	util.h\
+	zahl.h
 
 LIBUTF = libutf.a
 LIBUTFSRC =\
@@ -79,7 +80,19 @@ LIBUTILSRC =\
 	libutil/strtonum.c\
 	libutil/unescape.c
 
-LIB = $(LIBUTF) $(LIBUTIL)
+LIBUTIL = libutil.a
+LIBUTILSRC =\
+	libzahl/arithmetic.c\
+	libzahl/bitwise.c\
+	libzahl/compare.c\
+	libzahl/gcd.c\
+	libzahl/memory.c\
+	libzahl/prime.c\
+	libzahl/random.c\
+	libzahl/set.c\
+	libzahl/string.c
+
+LIB = $(LIBUTF) $(LIBUTIL) $(LIBZAHL)
 
 BIN =\
 	basename\
@@ -178,20 +191,22 @@ BIN =\
 	xinstall\
 	yes
 
+TESTS = libzahl-test
+
 LIBUTFOBJ = $(LIBUTFSRC:.c=.o)
 LIBUTILOBJ = $(LIBUTILSRC:.c=.o)
-OBJ = $(BIN:=.o) $(LIBUTFOBJ) $(LIBUTILOBJ)
+LIBZAHLOBJ = $(LIBUTILSRC:.c=.o)
+OBJ = $(BIN:=.o) $(LIBUTFOBJ) $(LIBUTILOBJ) $(LIBZAHLOBJ)
 SRC = $(BIN:=.c)
 MAN = $(BIN:=.1)
 
-all: $(BIN)
+all: $(BIN) $(TESTS)
 
 $(BIN): $(LIB) $(@:=.o)
 
-$(OBJ): $(HDR) config.mk
+$(TESTS): $(LIB) $(@:=.o)
 
-sbase: LDFLAGS += -ltommath
-factor: LDFLAGS += -ltommath
+$(OBJ): $(HDR) config.mk
 
 .o:
 	$(CC) $(LDFLAGS) -o $@ $< $(LIB)
