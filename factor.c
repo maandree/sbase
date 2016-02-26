@@ -81,8 +81,6 @@ static bigint_t result;
 static bigint_t expected;
 #endif
 
-static void subfactor(struct context *, bigint_t, size_t, bigint_t, bigint_t);
-
 static void
 context_init(struct context *ctx, bigint_t integer)
 {
@@ -198,7 +196,7 @@ iterated_division(struct context *ctx, bigint_t remainder, bigint_t numerator, b
 }
 
 static void
-subfactor_proper(struct context *ctx, bigint_t factor, bigint_t c, bigint_t next, size_t root_order)
+pollards_rho(struct context *ctx, bigint_t factor)
 {
 	/*
 	 * Pollard's rho algorithm with Floyd's cycle-finding algorithm and seed.
@@ -206,11 +204,31 @@ subfactor_proper(struct context *ctx, bigint_t factor, bigint_t c, bigint_t next
 	 * integers with small factors.
 	 */
 
-	size_t bits, cd;
+#define QUEUE(composite, order)  (mp_init(*fstack), zset(*fstack, composite), fstack++, *rstack++ = order)
+#define DEQUEUE()  (root_order = *--rstack, fstack--, zset(factor, *fstack), mp_clear(*fstack))
+
+	size_t bits, cd, root_order;
 	bigint_t *d = &ctx->d, *x = &ctx->x, *y = &ctx->y;
+	size_t *rstack = emalloc(mp_count_bits(factor) * sizeof(*rstack));
+	bigint_t *fstack = emalloc(mp_count_bits(factor) * sizeof(*fstack));
+	bigint_t *fstack_bottom = fstack;
+	bigint_t c;
 	long seed;
 
-beginning:
+	QUEUE(factor, 1);
+	mp_init(c);
+	zset_i(c, POLLARDS_RHO_INITIAL_SEED);
+
+next:
+	if (fstack == fstack_bottom) {
+		free(fstack);
+		free(rstack);
+		mp_clear(c);
+		return;
+	}
+	DEQUEUE();
+
+start_over:
 	bits = mp_count_bits(factor);
 
 	if (bits < elementsof(pollards_rho_seeds))
@@ -240,7 +258,7 @@ beginning:
 				break;
 			} else {
 				zadd_i(c, c, POLLARDS_RHO_SEED_INCREASEMENT);
-				goto beginning;
+				goto start_over;
 			}
 		}
 
@@ -250,8 +268,7 @@ beginning:
 				break;
 		} else {
 			cd = iterated_division(ctx, factor, factor, *d, 0);
-			zset(next, *d);
-			subfactor(ctx, next, root_order * cd, 0, 0);
+			QUEUE(*d, root_order * cd);
 			if (is_factorised(factor))
 				break;
 		}
@@ -261,27 +278,12 @@ beginning:
 			break;
 		}
 	}
-}
 
-static void
-subfactor(struct context *ctx, bigint_t integer, size_t root_order, bigint_t reuse_seed, bigint_t reuse_next)
-{
-	if (reuse_seed) {
-		zset_i(reuse_seed, POLLARDS_RHO_INITIAL_SEED);
-		subfactor_proper(ctx, integer, reuse_seed, reuse_next, root_order);
-	} else {
-		bigint_t seed, next;
-		mp_init(seed);
-		zset_i(seed, POLLARDS_RHO_INITIAL_SEED);
-		mp_init(next);
-		subfactor_proper(ctx, integer, seed, next, root_order);
-		mp_clear(seed);
-		mp_clear(next);
-	}
+	goto next;
 }
 
 static int
-factor(struct context *ctx, char *integer_str, bigint_t reusable_seed, bigint_t reusable_next)
+factor(struct context *ctx, char *integer_str)
 {
 	bigint_t integer;
 	size_t i, power;
@@ -331,7 +333,7 @@ factor(struct context *ctx, char *integer_str, bigint_t reusable_seed, bigint_t 
 		goto done;
 	}
 
-	subfactor(ctx, integer, 1, reusable_seed, reusable_next);
+	pollards_rho(ctx, integer);
 
 #ifdef DEBUG
 	if (zcmp(result, expected))
@@ -359,7 +361,6 @@ main(int argc, char *argv[])
 	long temp;
 	int ret = 0;
 	struct context ctx;
-	bigint_t reusable_seed, reusable_next;
 
 	ARGBEGIN {
 	case 'c':
@@ -377,8 +378,6 @@ main(int argc, char *argv[])
 #undef X
 
 	context_init(&ctx, 0);
-	mp_init(reusable_seed);
-	mp_init(reusable_next);
 #ifdef DEBUG
 	mp_init(result);
 	mp_init(expected);
@@ -386,7 +385,7 @@ main(int argc, char *argv[])
 
 	if (*argv) {
 		while (*argv)
-			ret |= factor(&ctx, *argv++, reusable_seed, reusable_next);
+			ret |= factor(&ctx, *argv++);
 	} else {
 		ssize_t n;
 		size_t size = 0;
@@ -395,14 +394,12 @@ main(int argc, char *argv[])
 			if (n > 0 && line[n - 1] == '\n')
 				n--;
 			line[n] = 0;
-			ret |= *line ? factor(&ctx, line, reusable_seed, reusable_next) : 0;
+			ret |= *line ? factor(&ctx, line) : 0;
 		}
 		free(line);
 	}
 
 	context_free(&ctx);
-	mp_clear(reusable_seed);
-	mp_clear(reusable_next);
 #ifdef DEBUG
 	mp_clear(result);
 	mp_clear(expected);
