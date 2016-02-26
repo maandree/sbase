@@ -130,8 +130,8 @@ start_over:
 			}
 		}
 
-		if (prime_test(factor)) {
-			output_prime(factor);
+		if (prime_test(d)) {
+			output_prime(d);
 			zdiv(factor, factor, d);
 			if (is_factorised(factor))
 				break;
