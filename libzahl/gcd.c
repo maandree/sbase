@@ -1,6 +1,11 @@
 /* See LICENSE file for copyright and license details. */
 #include "../zahl.h"
 
+#define u zahl_tmp_a
+#define v zahl_tmp_b
+
+extern z_t u, v;
+
 void /* a := gcd(b, c) */
 zgcd(z_t a, z_t b, z_t c)
 {
@@ -8,41 +13,46 @@ zgcd(z_t a, z_t b, z_t c)
 	 * Binary GCD algorithm.
 	 */
 
-	unsigned long long u = *b < 0 ? -*b : *b;
-	unsigned long long v = *c < 0 ? -*c : *c;
-	size_t shifts = 0;
+	size_t shifts = 0, i = 0;
+	uint32_t uv, bit;
 
-	if (*b == *c) {
-		*a = *b;
+	if (!zcmp(b, c)) {
+		zset(a, b);
 		return;
 	}
-	if (*b == 0) {
-		*a = *c;
+	if (!b->sign) {
+		zset(a, c);
 		return;
 	}
-	if (*c == 0) {
-		*a = *b;
-		return;
-	}
-	if (*b < 0 || *c < 0) {
-		zgcd(a, (long long *)&u, (long long *)&v);
-		if (*b < 0 && *c < 0)
-			zneg(a, a);
+	if (!c->sign) {
+		zset(a, b);
 		return;
 	}
 
-	while (!((u | v) & 1))
-		u >>= 1, v >>= 1, shifts++;
+	zabs(u, b);
+	zabs(v, c);
 
-	while (!(u & 1))
-		u >>= 1;
+	for (;; i++) {
+		uv = (i < u->used ? u->chars[i] : 0)
+		   | (i < v->used ? v->chars[i] : 0);
+		for (bit = 1; bit; bit <<= 1, shifts++)
+			if (uv & bit)
+				goto loop_done;
+	}
+loop_done:
+	zrsh(u, u, shifts);
+	zrsh(v, v, shifts);
+
+	while (zeven(u))
+		zrsh(u, u, 1);
 	do {
-		while (!(v & 1))
-			v >>= 1;
-		if (u > v)
-			*a = u, u = v, v = *a;
-		v -= u;
-	} while (v);
+		while (zeven(v))
+			zrsh(v, v, 1);
+		if (zcmpmag(u, v) > 0) /* both are non-negative */
+			zswap(u, v);
+		zsub_unsigned(v, v, u);
+	} while (v->sign);
 
-	*a = u << shifts;
+	zlsh(a, u, shifts);
+	a->sign = (b->sign < 0 && c->sign < 0) ? -1 : 1;
 }

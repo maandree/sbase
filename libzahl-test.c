@@ -2,168 +2,677 @@
 #include "zahl.h"
 
 #include <stdio.h>
+#include <string.h>
+
+#define assert(expr, expected)\
+	do {\
+		int got = (expr);\
+		if (!(got expected)) {\
+			fprintf(stderr,\
+				"Failure at line %i: %s, expected %s, but got %i.\n",\
+				__LINE__, #expr, #expected, got);\
+			return 1;\
+		}\
+	} while (0)
+
+#define assert_zu(expr, expected)\
+	do {\
+		size_t got = (expr);\
+		if (got != (expected)) {\
+			fprintf(stderr,\
+				"Failure at line %i: %s, expected %zu, but got %zu.\n",\
+				__LINE__, #expr, (size_t)(expected), got);\
+			return 1;\
+		}\
+	} while (0)
+
+#define assert_s(expr, expected)\
+	do {\
+		const char *got = (expr);\
+		if (strcmp(got, expected)) {\
+			fprintf(stderr,\
+				"Failure at line %i: %s, expected %s, but got %s.\n",\
+				__LINE__, #expr, expected, got);\
+			return 1;\
+		}\
+	} while (0)
 
 int
 main(void)
 {
 	jmp_buf env;
 	char buf[1000];
-	z_t a, b, c, _0, _1;
+	z_t a, b, c, d, _0, _1, _2, _3;
+	size_t n;
 
 	zsetup(env);
-	zinit(a), zinit(b), zinit(c), zinit(_0), zinit(_1);
+	zinit(a), zinit(b), zinit(c), zinit(d), zinit(_0), zinit(_1), zinit(_2), zinit(_3);
 
-	zseti(_0, 0);
-	printf("this should be 0: %s\n", zstr(_0, buf));
-	zseti(_1, 1);
-	printf("this should be 1: %s\n", zstr(_1, buf));
+	zsetu(_0, 0);
+	zsetu(_1, 1);
+	zsetu(_2, 2);
+	zsetu(_3, 3);
 
-	zsets(a, "123");
-	printf("this should be 123: %s\n", zstr(a, buf));
-	zsets(a, "123000");
-	printf("this should be 123000: %s\n", zstr(a, buf));
-	zsets(b, "456");
-	printf("this should be 456: %s\n", zstr(b, buf));
+	assert(zeven(_0), == 1);
+	assert(zodd(_0), == 0);
+	assert(zzero(_0), == 1);
+	assert(zsignum(_0), == 0);
+	assert(zeven(_1), == 0);
+	assert(zodd(_1), == 1);
+	assert(zzero(_1), == 0);
+	assert(zsignum(_1), == 1);
+	assert(zeven(_2), == 1);
+	assert(zodd(_2), == 0);
+	assert(zzero(_2), == 0);
+	assert(zsignum(_2), == 1);
 
-	zadd(c, a, b);
-	printf("this should be 123456: %s\n", zstr(c, buf));
-	zsub(c, a, b);
-	printf("this should be 122544: %s\n", zstr(c, buf));
-	zmul(c, a, b);
-	printf("this should be 56088000: %s\n", zstr(c, buf));
-	zdiv(c, c, b);
-	printf("this should be 123000: %s\n", zstr(c, buf));
-	zneg(c, c);
-	printf("this should be -123000: %s\n", zstr(c, buf));
-	zneg(c, c);
-	printf("this should be 123000: %s\n", zstr(c, buf));
-	zabs(b, c);
-	printf("this should be 123000: %s\n", zstr(b, buf));
-	zneg(c, c);
-	zabs(b, c);
-	printf("this should be 123000: %s\n", zstr(b, buf));
-	zsqr(c, a);
-	printf("this should be 15129000000: %s\n", zstr(c, buf));
-	zseti(b, 5);
-	zseti(c, 6);
-	zpow(a, b, c);
-	printf("this should be 15625: %s\n", zstr(a, buf));
-	zseti(a, 500);
-	zmodpow(a, b, c, a);
-	printf("this should be 125: %s\n", zstr(a, buf));
+	zswap(_1, _2);
+	assert(zeven(_2), == 0);
+	assert(zodd(_2), == 1);
+	assert(zzero(_2), == 0);
+	assert(zsignum(_2), == 1);
+	assert(zeven(_1), == 1);
+	assert(zodd(_1), == 0);
+	assert(zzero(_1), == 0);
+	assert(zsignum(_1), == 1);
+	zswap(_2, _1);
+	assert(zeven(_1), == 0);
+	assert(zodd(_1), == 1);
+	assert(zzero(_1), == 0);
+	assert(zsignum(_1), == 1);
+	assert(zeven(_2), == 1);
+	assert(zodd(_2), == 0);
+	assert(zzero(_2), == 0);
+	assert(zsignum(_2), == 1);
+	
+	assert((zneg(_2, _2), zsignum(_2)), == -1); zneg(_2, _2);
+	assert(zsignum(_2), == 1);
 
-	zsets(a, "123");
-	printf("this should be 123: %s\n", zstr(a, buf));
-	zsets(b, "456");
-	printf("this should be 456: %s\n", zstr(b, buf));
+	assert(zcmp(_0, _0), == 0);
+	assert(zcmp(_1, _1), == 0);
+	assert(zcmp(_0, _1), < 0);
+	assert(zcmp(_1, _0), > 0);
+	assert(zcmp(_1, _2), < 0);
+	assert(zcmp(_2, _1), > 0);
+	assert(zcmp(_0, _2), < 0);
+	assert(zcmp(_2, _0), > 0);
+	zadd(a, _0, _1);
+	assert(zsignum(a), == 1);
+	assert(zcmp(a, _1), == 0);
+	assert(zcmpi(a, 1), == 0);
+	assert(zcmpu(a, 1), == 0);
+	zneg(a, a);
+	assert(zsignum(a), == -1);
+	assert(zcmp(a, _1), < 0);
+	assert(zcmpi(a, 1), < 0);
+	assert(zcmpu(a, 1), < 0);
+	zadd(a, _2, _0);
+	assert(zsignum(a), == 1);
+	assert(zcmp(a, _2), == 0);
+	assert(zcmpi(a, 2), == 0);
+	assert(zcmpu(a, 2), == 0);
+	zneg(a, a);
+	assert(zsignum(a), == -1);
+	assert(zcmp(a, _2), < 0);
+	assert(zcmpi(a, 2), < 0);
+	assert(zcmpu(a, 2), < 0);
+	assert(zsignum(_1), == 1);
+	zadd(a, _1, _1);
+	assert(zsignum(a), == 1);
+	assert(zcmp(a, _2), == 0);
+	assert(zcmpi(a, 2), == 0);
+	assert(zcmpu(a, 2), == 0);
+	zset(b, _1);
+	zadd(a, b, _1);
+	assert(zsignum(a), == 1);
+	assert(zcmp(a, _2), == 0);
+	assert(zcmpi(a, 2), == 0);
+	assert(zcmpu(a, 2), == 0);
+	zneg(a, a);
+	zset(b, _2);
+	zneg(b, b);
+	assert(zsignum(a), == -1);
+	assert(zcmp(a, b), == 0);
+	assert(zcmp(a, _2), < 0);
+	assert(zcmpmag(a, b), == 0);
+	assert(zcmpmag(a, _2), == 0);
+	assert(zcmpi(a, 2), < 0);
+	assert(zcmpu(a, 2), < 0);
+	assert(zcmpi(a, -2), == 0);
+	assert((zneg(_2, _2), zcmp(a, _2)), == 0); zneg(_2, _2);
+	zadd(a, _1, _2);
+	assert(zsignum(a), == 1);
+	assert(zcmp(a, _2), > 0);
+	assert(zcmpi(a, 2), > 0);
+	assert(zcmpu(a, 2), > 0);
+	zneg(a, a);
+	zset(b, _2);
+	zneg(b, b);
+	assert(zsignum(a), == -1);
+	assert(zcmpmag(a, _2), > 0);
+	assert(zcmpmag(a, b), > 0);
+	assert(zcmp(a, b), < 0);
+	assert(zcmp(a, _2), < 0);
+	assert(zcmpi(a, 2), < 0);
+	assert(zcmpu(a, 2), < 0);
+	assert(zcmpi(a, -2), < 0);
+	assert((zneg(_2, _2), zcmp(a, _2)), < 0); zneg(_2, _2);
+	zneg(b, _3);
+	assert(zcmp(a, b), == 0);
 
-	zmod(c, b, a);
-	printf("this should be 87: %s\n", zstr(c, buf));
-	zdivmod(a, b, b, a);
-	printf("this should be 3: %s\n", zstr(a, buf));
-	printf("this should be 87: %s\n", zstr(b, buf));
+	zsub(a, _2, _1);
+	assert(zcmpmag(_2, _1), > 0);
+	assert(zcmpmag(_2, _0), > 0);
+	assert(zcmpmag(_1, _0), > 0);
+	zsub(b, _1, _2);
+	assert(zcmpmag(_2, _0), > 0);
+	assert(zcmpmag(_1, _0), > 0);
+	assert(zcmpmag(_2, _1), > 0);
+	assert(zcmpmag(a, b), == 0);
+	assert(zcmpmag(a, _1), == 0);
+	assert(zcmp(a, b), > 0);
+	assert(zcmp(a, _1), == 0);
+	assert(zcmp(b, _1), < 0);
+	zsub(a, _1, _1);
+	assert(zcmp(a, _0), == 0);
+	zseti(b, 0);
+	zsetu(c, 0);
+	zsub(a, b, c);
+	assert(zcmp(a, _0), == 0);
+	assert(zcmpmag(_2, _1), > 0);
+	assert(zcmp(_2, _1), > 0);
+	zsub(a, _2, _1);
+	assert(zsignum(a), == 1);
+	assert(zcmpmag(a, _1), == 0);
+	assert(zcmp(a, _1), == 0);
+	zsub(a, a, _1);
+	assert(zcmp(a, _0), == 0);
+	zsub(a, a, _0);
+	assert(zcmp(a, _0), == 0);
+	zsub(a, _1, _2);
+	assert(zcmp(a, _1), < 0);
+	assert(zcmpmag(a, _1), == 0);
+	zabs(a, a);
+	assert(zcmp(a, _1), == 0);
+	zabs(a, a);
+	assert(zcmp(a, _1), == 0);
+	zabs(a, _1);
+	assert(zcmp(a, _1), == 0);
+	zabs(a, _0);
+	assert(zcmp(a, _0), == 0);
 
-	zseti(a, 123);
-	printf("this should be 123: %s\n", zstr(a, buf));
-	zseti(a, -123);
-	printf("this should be -123: %s\n", zstr(a, buf));
-	zsetu(a, 123);
-	printf("this should be 123: %s\n", zstr(a, buf));
-	zset(c, a);
-	printf("this should be 123: %s\n", zstr(c, buf));
+	zseti(b, -1);
+	zseti(c, -2);
+	zadd(a, _0, b);
+	assert(zcmp(a, _0), < 0);
+	assert(zcmpi(a, -1), == 0);
+	assert(zcmpmag(a, _1), == 0);
+	assert(zcmp(a, _1), < 0);
+	zadd(a, b, _0);
+	assert(zcmp(a, _0), < 0);
+	assert(zcmpi(a, -1), == 0);
+	assert(zcmpmag(a, _1), == 0);
+	assert(zcmp(a, _1), < 0);
+	zadd(a, b, c);
+	assert(zcmp(a, c), < 0);
+	assert(zcmpmag(a, _2), > 0);
+	zadd(a, c, b);
+	assert(zcmp(a, c), < 0);
+	assert(zcmpmag(a, _2), > 0);
+	zadd(a, b, _1);
+	assert(zcmp(a, _0), == 0);
+	assert(zcmpmag(a, _0), == 0);
+	zadd(a, _1, b);
+	assert(zcmp(a, _0), == 0);
+	assert(zcmpmag(a, _0), == 0);
 
-	zseti(a, 128);
-	zrsh(c, a, 2);
-	printf("this should be 32: %s\n", zstr(c, buf));
-	zlsh(c, a, 2);
-	printf("this should be 512: %s\n", zstr(c, buf));
+	zneg(b, _1);
+	zneg(c, _2);
+	zsub(a, _0, b);
+	assert(zcmp(a, _1), == 0);
+	zsub(a, b, _0);
+	assert(zcmpmag(a, _1), == 0);
+	assert(zcmp(a, _1), < 0);
+	zsub(a, b, c);
+	assert(zcmpmag(a, _1), == 0);
+	assert(zcmp(a, _1), == 0);
+	zsub(a, c, b);
+	assert(zcmpmag(a, _1), == 0);
+	assert(zcmp(a, _1), < 0);
+	zsub(a, b, _1);
+	assert(zcmpmag(a, _2), == 0);
+	assert(zcmp(a, _2), < 0);
+	assert(zcmp(a, c), == 0);
+	zsub(a, _1, b);
+	assert(zcmp(b, _1), < 0);
+	assert(zcmpmag(b, _1), == 0);
+	assert(zcmp(a, _2), == 0);
 
-	zseti(a, 0 | 0 | 4 | 8);
-	zseti(b, 0 | 2 | 0 | 8);
-	zand(c, a, b);
-	printf("this should be 8: %s\n", zstr(c, buf));
-	zor(c, a, b);
-	printf("this should be 14: %s\n", zstr(c, buf));
-	zxor(c, a, b);
-	printf("this should be 6: %s\n", zstr(c, buf));
-	/*znot(c, a);
-	printf("this should be 3: %s\n", zstr(c, buf));*/
-	printf("this should be 4: %zu\n", zbits(a));
-	printf("this should be 4: %zu\n", zbits(b));
-	printf("this should be 2: %zu\n", zlsb(a));
-	printf("this should be 1: %zu\n", zlsb(b));
+	zsetu(a, 1000);
+	zsetu(b, 0);
+	assert(zcmp(a, b), != 0);
+	n = zsave(a, buf);
+	assert(n, > 0);
+	assert_zu(zload(b, buf), n);
+	assert(zcmp(a, b), == 0);
 
-	printf("this should be 12: %s\n", zstr(a, buf));
-	printf("this should be 10: %s\n", zstr(b, buf));
+	zneg(b, _1);
+	zneg(c, _2);
 
-	printf("this should be 1: %i\n", zcmp(a, b));
-	printf("this should be 0: %i\n", zcmp(a, a));
-	printf("this should be -1: %i\n", zcmp(b, a));
+	assert((zadd_unsigned(a, b, c), zcmp(a, _3)), == 0);
+	assert((zadd_unsigned(a, b, c), zcmp(a, _3)), == 0);
+	assert((zadd_unsigned(a, b, _2), zcmp(a, _3)), == 0);
+	assert((zadd_unsigned(a, _1, c), zcmp(a, _3)), == 0);
 
-	printf("this should be 1: %i\n", zcmpi(a, 11));
-	printf("this should be 0: %i\n", zcmpi(a, 12));
-	printf("this should be -1: %i\n", zcmpi(a, 13));
+	assert((zsub_unsigned(a, _2, _1), zcmp(a, _1)), == 0);
+	assert((zsub_unsigned(a, _2, b), zcmp(a, _1)), == 0);
+	assert((zsub_unsigned(a, c, _1), zcmp(a, _1)), == 0);
+	assert((zsub_unsigned(a, c, b), zcmp(a, _1)), == 0);
 
-	printf("this should be 1: %i\n", zcmpu(a, 11));
-	printf("this should be 0: %i\n", zcmpu(a, 12));
-	printf("this should be -1: %i\n", zcmpu(a, 13));
+	assert((zsub_unsigned(a, _1, _2), zcmp(a, b)), == 0);
+	assert((zsub_unsigned(a, b, _2), zcmp(a, b)), == 0);
+	assert((zsub_unsigned(a, _1, c), zcmp(a, b)), == 0);
+	assert((zsub_unsigned(a, b, c), zcmp(a, b)), == 0);
 
-	zseti(a, 3 * 5 * 5 * 7 * 11);
-	zseti(b, 3 * 5 * 13);
-	zgcd(c, a, b);
-	printf("this should be 15: %s\n", zstr(c, buf));
-	zgcd(c, b, a);
-	printf("this should be 15: %s\n", zstr(c, buf));
-	zgcd(c, b, b);
-	printf("this should be 195: %s\n", zstr(c, buf));
-	zgcd(c, b, _0);
-	printf("this should be 195: %s\n", zstr(c, buf));
-	zgcd(c, a, _0);
-	printf("this should be 5775: %s\n", zstr(c, buf));
-	zgcd(c, b, _1);
-	printf("this should be 1: %s\n", zstr(c, buf));
-	zgcd(c, a, _1);
-	printf("this should be 1: %s\n", zstr(c, buf));
+	assert((zsub_positive(a, _2, _1), zcmp(a, _1)), == 0);
+	assert((zsub_positive(a, _2, b), zcmp(a, _1)), == 0);
+	assert((zsub_positive(a, c, _1), zcmp(a, _1)), == 0);
+	assert((zsub_positive(a, c, b), zcmp(a, _1)), == 0);
 
-	zseti(a, -1);
-	printf("this should be 0: %i\n", zptest(a, 50));
-	zseti(a, 0);
-	printf("this should be 0: %i\n", zptest(a, 50));
-	zseti(a, 1);
-	printf("this should be 0: %i\n", zptest(a, 50));
-	zseti(a, 2);
-	printf("this should be 2: %i\n", zptest(a, 50));
-	zseti(a, 3);
-	printf("this should be 2: %i\n", zptest(a, 50));
-	zseti(a, 4);
-	printf("this should be 0: %i\n", zptest(a, 50));
-	zseti(a, 5);
-	printf("this should be 1: %i\n", zptest(a, 50));
-	zseti(a, 6);
-	printf("this should be 0: %i\n", zptest(a, 50));
-	zseti(a, 7);
-	printf("this should be 1: %i\n", zptest(a, 50));
+	assert_zu(zbits(_0), 1);
+	assert_zu(zbits(_1), 1);
+	assert_zu(zbits(_2), 2);
+	assert_zu(zbits(_3), 2);
+
+	assert_zu(zlsb(_0), SIZE_MAX);
+	assert_zu(zlsb(_1), 0);
+	assert_zu(zlsb(_2), 1);
+	assert_zu(zlsb(_3), 0);
+
+	assert((zand(a, _0, _0), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zand(a, _0, _1), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zand(a, _0, _2), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zand(a, _0, _3), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zand(a, _1, _1), zcmp(a, _1)), == 0);
+	assert((zand(a, _1, _2), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zand(a, _1, _3), zcmp(a, _1)), == 0);
+	assert((zand(a, _2, _2), zcmp(a, _2)), == 0);
+	assert((zand(a, _2, _3), zcmp(a, _2)), == 0);
+	assert((zand(a, _3, _3), zcmp(a, _3)), == 0);
+
+	assert((zor(a, _0, _0), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zor(a, _0, _1), zcmp(a, _1)), == 0);
+	assert((zor(a, _0, _2), zcmp(a, _2)), == 0);
+	assert((zor(a, _0, _3), zcmp(a, _3)), == 0);
+	assert((zor(a, _1, _1), zcmp(a, _1)), == 0);
+	assert((zor(a, _1, _2), zcmp(a, _3)), == 0);
+	assert((zor(a, _1, _3), zcmp(a, _3)), == 0);
+	assert((zor(a, _2, _2), zcmp(a, _2)), == 0);
+	assert((zor(a, _2, _3), zcmp(a, _3)), == 0);
+	assert((zor(a, _3, _3), zcmp(a, _3)), == 0);
+
+	assert((zxor(a, _0, _0), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zxor(a, _0, _1), zcmp(a, _1)), == 0);
+	assert((zxor(a, _0, _2), zcmp(a, _2)), == 0);
+	assert((zxor(a, _0, _3), zcmp(a, _3)), == 0);
+	assert((zxor(a, _1, _1), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zxor(a, _1, _2), zcmp(a, _3)), == 0);
+	assert((zxor(a, _1, _3), zcmp(a, _2)), == 0);
+	assert((zxor(a, _2, _2), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zxor(a, _2, _3), zcmp(a, _1)), == 0);
+	assert((zxor(a, _3, _3), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+
+	zneg(b, _1);
+	zneg(c, _3);
+	zneg(_1, _1);
+	zand(a, b, c);
+	assert(zcmpmag(a, _1), == 0);
+	assert(zcmp(a, _1), == 0);
+	zneg(_1, _1);
+	assert((zand(a, b, _3), zcmp(a, _1)), == 0);
+	assert((zand(a, _1, c), zcmp(a, _1)), == 0);
+	assert((zand(a, _0, c), zcmp(a, _0)), == 0);
+	assert((zand(a, b, _0), zcmp(a, _0)), == 0);
+
+	zneg(b, _1);
+	zneg(c, _2);
+	zneg(_3, _3);
+	zor(a, b, c);
+	assert(zcmpmag(a, _3), == 0);
+	assert(zcmp(a, _3), == 0);
+	zor(a, b, _2);
+	assert(zcmpmag(a, _3), == 0);
+	assert(zcmp(a, _3), == 0);
+	zor(a, _1, c);
+	assert((zcmpmag(a, _3)), == 0);
+	assert((zcmp(a, _3)), == 0);
+	assert((zor(a, _0, c), zcmp(a, c)), == 0);
+	assert((zor(a, b, _0), zcmp(a, b)), == 0);
+	zneg(_3, _3);
+
+	zneg(b, _1);
+	zneg(c, _2);
+	zxor(a, b, c);
+	assert(zcmpmag(a, _3), == 0);
+	assert(zcmp(a, _3), == 0);
+	zneg(_3, _3);
+	zxor(a, b, _2);
+	assert(zcmpmag(a, _3), == 0);
+	assert(zcmp(a, _3), == 0);
+	zxor(a, _1, c);
+	assert(zcmpmag(a, _3), == 0);
+	assert(zcmp(a, _3), == 0);
+	zxor(a, b, _0);
+	assert(zcmpmag(a, b), == 0);
+	assert(zcmp(a, b), == 0);
+	zxor(a, _0, c);
+	assert(zcmpmag(a, c), == 0);
+	assert(zcmp(a, c), == 0);
+	zneg(_3, _3);
+
+	assert((zlsh(a, _0, 0), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zlsh(a, _0, 1), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zlsh(a, _1, 0), zcmp(a, _1)), == 0);
+	assert((zlsh(a, _1, 1), zcmp(a, _2)), == 0);
+	assert((zlsh(a, _1, 2), zcmp(a, _2)), > 0);
+	assert((zlsh(a, _2, 0), zcmp(a, _2)), == 0);
+	assert((zlsh(a, _2, 1), zcmp(a, _2)), > 0);
+
+	zset(a, _0);
+	assert((zlsh(a, a, 0), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zlsh(a, a, 1), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	zset(a, _1);
+	assert((zlsh(a, a, 0), zcmp(a, _1)), == 0);
+	assert((zlsh(a, a, 1), zcmp(a, _2)), == 0);
+	assert((zlsh(a, a, 2), zcmp(a, _2)), > 0);
+	zset(a, _2);
+	assert((zlsh(a, a, 0), zcmp(a, _2)), == 0);
+	assert((zlsh(a, a, 1), zcmp(a, _2)), > 0);
+
+	assert((zrsh(a, _0, 0), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zrsh(a, _0, 1), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zrsh(a, _1, 0), zcmp(a, _1)), == 0);
+	assert((zrsh(a, _1, 1), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zrsh(a, _1, 2), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zrsh(a, _2, 0), zcmp(a, _2)), == 0);
+	assert((zrsh(a, _2, 1), zcmp(a, _1)), == 0);
+	assert((zrsh(a, _2, 2), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+
+	zset(a, _0);
+	assert((zrsh(a, a, 0), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zrsh(a, a, 1), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	zset(a, _1);
+	assert((zrsh(a, a, 0), zcmp(a, _1)), == 0);
+	assert((zrsh(a, a, 1), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	assert((zrsh(a, a, 2), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+	zset(a, _2);
+	assert((zrsh(a, a, 0), zcmp(a, _2)), == 0);
+	assert((zrsh(a, a, 1), zcmp(a, _1)), == 0);
+	assert((zrsh(a, a, 2), zcmp(a, _0)), == 0);
+	assert(zzero(a), == 1);
+
+	assert(zbtest(_0, 0), == 0);
+	assert(zbtest(_1, 0), == 1);
+	assert(zbtest(_2, 0), == 0);
+	assert(zbtest(_3, 0), == 1);
+	assert(zbtest(_0, 1), == 0);
+	assert(zbtest(_1, 1), == 0);
+	assert(zbtest(_2, 1), == 1);
+	assert(zbtest(_3, 1), == 1);
+	assert(zbtest(_0, 2), == 0);
+	assert(zbtest(_1, 2), == 0);
+	assert(zbtest(_2, 2), == 0);
+	assert(zbtest(_3, 2), == 0);
+
+	znot(a, _2);
+	assert(zcmpmag(a, _1), == 0);
+	assert(zcmp(a, _1), != 0);
+	znot(a, a);
+	assert(zcmp(a, _0), == 0);
+
+	zsetu(a, 0xEEFF);
+	zsetu(c, 0xEE);
+	zsetu(d, 0xFF);
+	zsplit(a, b, a, 8);
+	assert(zcmpmag(a, c), == 0);
+	assert(zcmpmag(b, d), == 0);
+	zsetu(a, 0xEEFF);
+	zsplit(b, a, a, 8);
+	assert(zcmpmag(b, c), == 0);
+	assert(zcmpmag(a, d), == 0);
+
+	zmul(a, _2, _3);
+	assert(zcmpi(a, 6), == 0);
+	zneg(_3, _3);
+	zmul(a, _2, _3);
+	assert(zcmpi(a, -6), == 0);
+	zneg(_3, _3);
+	zneg(_2, _2);
+	zmul(a, _2, _3);
+	assert(zcmpi(a, -6), == 0);
+	zneg(_3, _3);
+	zmul(a, _2, _3);
+	assert(zcmpi(a, 6), == 0);
+	zneg(_3, _3);
+	zneg(_2, _2);
+
+	zmul(a, _3, _3);
+	assert(zcmpi(a, 9), == 0);
+	zsqr(a, _3);
+	assert(zcmpi(a, 9), == 0);
+	zneg(_3, _3);
+	zmul(a, _3, _3);
+	assert(zcmpi(a, 9), == 0);
+	zsqr(a, _3);
+	assert(zcmpi(a, 9), == 0);
+	zneg(_3, _3);
+
 	zseti(a, 8);
-	printf("this should be 0: %i\n", zptest(a, 50));
-	zseti(a, 9);
-	printf("this should be 0: %i\n", zptest(a, 50));
-	zseti(a, 10);
-	printf("this should be 0: %i\n", zptest(a, 50));
-	zseti(a, 11);
-	printf("this should be 1: %i\n", zptest(a, 50));
-	zseti(a, 12);
-	printf("this should be 0: %i\n", zptest(a, 50));
-	zseti(a, 13);
-	printf("this should be 1: %i\n", zptest(a, 50));
-	zseti(a, 14);
-	printf("this should be 0: %i\n", zptest(a, 50));
-	zseti(a, 15);
-	printf("this should be 0: %i\n", zptest(a, 50));
-	zseti(a, 16);
-	printf("this should be 0: %i\n", zptest(a, 50));
-	zseti(a, 17);
-	printf("this should be 1: %i\n", zptest(a, 50));
+	zseti(b, 2);
+	zdiv(c, a, b);
+	assert(zcmpi(c, 4), == 0);
+	zseti(b, -2);
+	zdiv(c, a, b);
+	assert(zcmpi(c, -4), == 0);
+	zseti(a, -8);
+	zseti(b, 2);
+	zdiv(c, a, b);
+	assert(zcmpi(c, -4), == 0);
+	zseti(b, -2);
+	zdiv(c, a, b);
+	assert(zcmpi(c, 4), == 0);
 
-	zfree(a), zfree(b), zfree(c), zfree(_0), zfree(_1);
+	zseti(a, 1000);
+	zseti(b, 10);
+	zdiv(c, a, b);
+	assert(zcmpi(c, 100), == 0);
+	zseti(b, -10);
+	zdiv(c, a, b);
+	assert(zcmpi(c, -100), == 0);
+	zseti(a, -1000);
+	zseti(b, 10);
+	zdiv(c, a, b);
+	assert(zcmpi(c, -100), == 0);
+	zseti(b, -10);
+	zdiv(c, a, b);
+	assert(zcmpi(c, 100), == 0);
+
+	zseti(a, 7);
+	zseti(b, 3);
+	zmod(c, a, b);
+	assert(zcmpi(c, 1), == 0);
+	zseti(b, -3);
+	zmod(c, a, b);
+	assert(zcmpi(c, 1), == 0);
+	zseti(a, -7);
+	zseti(b, 3);
+	zmod(c, a, b);
+	assert(zcmpi(c, 1), == 0);
+	zseti(b, -3);
+	zmod(c, a, b);
+	assert(zcmpi(c, 1), == 0);
+
+	zseti(a, 7);
+	zseti(b, 3);
+	zdivmod(d, c, a, b);
+	assert(zcmpi(d, 2), == 0);
+	assert(zcmpi(c, 1), == 0);
+	zseti(b, -3);
+	zdivmod(d, c, a, b);
+	assert(zcmpi(d, -2), == 0);
+	assert(zcmpi(c, 1), == 0);
+	zseti(a, -7);
+	zseti(b, 3);
+	zdivmod(d, c, a, b);
+	assert(zcmpi(d, -2), == 0);
+	assert(zcmpi(c, 1), == 0);
+	zseti(b, -3);
+	zdivmod(d, c, a, b);
+	assert(zcmpi(d, 2), == 0);
+	assert(zcmpi(c, 1), == 0);
+
+	zseti(a, 10);
+	zseti(b, -1);
+	zpow(a, a, b);
+	assert(zcmp(a, _0), == 0);
+
+	zseti(a, 10);
+	zseti(b, -1);
+	zseti(a, 20);
+	zmodpow(a, a, b, c);
+	assert(zcmp(a, _0), == 0);
+
+	zseti(a, 10);
+	zseti(b, 5);
+	zseti(c, 100000L);
+	zpow(a, a, b);
+	assert(zcmpmag(a, c), == 0);
+	assert(zcmp(a, c), == 0);
+
+	zseti(a, -10);
+	zseti(b, 5);
+	zseti(c, -100000L);
+	zpow(a, a, b);
+	assert(zcmpmag(a, c), == 0);
+	assert(zcmp(a, c), == 0);
+
+	zseti(a, -10);
+	zseti(b, 4);
+	zseti(c, 10000L);
+	zpow(a, a, b);
+	assert(zcmpmag(a, c), == 0);
+	assert(zcmp(a, c), == 0);
+
+	zseti(a, 10);
+	zseti(b, 5);
+	zseti(c, 3);
+	zmodpow(a, a, b, c);
+	assert(zcmpmag(a, _1), == 0);
+	assert(zcmp(a, _1), == 0);
+
+	zseti(a, 102);
+	zseti(b, 501);
+	zseti(c, 5);
+	zmodmul(a, a, b, c);
+	assert(zcmp(a, _2), == 0);
+
+	zseti(b, 2 * 3 * 3 * 7);
+	zseti(c, 3 * 7 * 11);
+	zseti(d, 3 * 7);
+	assert((zgcd(a, _0, _0), zcmp(a, _0)), == 0);
+	assert((zgcd(a, b, _0), zcmp(a, b)), == 0);
+	assert((zgcd(a, _0, c), zcmp(a, c)), == 0);
+	assert((zgcd(a, b, b), zcmp(a, b)), == 0);
+	assert((zgcd(a, b, _2), zcmp(a, _2)), == 0);
+	assert((zgcd(a, _2, b), zcmp(a, _2)), == 0);
+	assert((zgcd(a, _2, _2), zcmp(a, _2)), == 0);
+	assert((zgcd(a, c, _2), zcmp(a, _1)), == 0);
+	assert((zgcd(a, _2, c), zcmp(a, _1)), == 0);
+	assert((zgcd(a, b, _1), zcmp(a, _1)), == 0);
+	assert((zgcd(a, _1, c), zcmp(a, _1)), == 0);
+	assert((zgcd(a, _1, _1), zcmp(a, _1)), == 0);
+	assert((zgcd(a, b, c), zcmp(a, d)), == 0);
+	assert((zgcd(a, c, b), zcmp(a, d)), == 0);
+
+	zsets(a, "1234");
+	assert(zcmpi(a, 1234), == 0);
+	zsets(b, "+1234");
+	assert(zcmp(a, b), == 0);
+	assert_zu(zstr_length_positive(_0, 10), 1);
+	assert_zu(zstr_length_positive(_1, 10), 1);
+	assert_zu(zstr_length_positive(_2, 10), 1);
+	assert_zu(zstr_length_positive(_3, 10), 1);
+	assert_zu(zstr_length_positive(a, 10), 4);
+	zstr(a, buf);
+	assert_s(buf, "1234");
+	zsets(a, "-1234");
+	zseti(b, -1234);
+	zseti(c, 1234);
+	assert(zcmp(a, _0), < 0);
+	assert(zcmp(a, b), == 0);
+	assert(zcmpmag(a, c), == 0);
+	assert(zcmp(a, c), < 0);
+	zstr(a, buf);
+	assert_s(buf, "-1234");
+	assert_s(zstr(a, buf), "-1234");
+
+	zsetu(d, 100000UL);
+	zrand(a, d, FAST_RANDOM, UNIFORM);
+	assert(zcmp(a, _0), >= 0);
+	assert(zcmp(a, d), <= 0);
+	zrand(b, d, SECURE_RANDOM, UNIFORM);
+	assert(zcmp(b, _0), >= 0);
+	assert(zcmp(b, d), <= 0);
+	zrand(c, d, FAST_RANDOM, UNIFORM);
+	assert(zcmp(c, _0), >= 0);
+	assert(zcmp(c, d), <= 0);
+	assert(zcmp(a, b), != 0);
+	assert(zcmp(a, c), != 0);
+	assert(zcmp(b, c), != 0);
+
+	assert((zseti(a, -5), zptest(a, 100)), == NONPRIME);
+	assert((zseti(a, -4), zptest(a, 100)), == NONPRIME);
+	assert((zseti(a, -3), zptest(a, 100)), == NONPRIME);
+	assert((zseti(a, -2), zptest(a, 100)), == NONPRIME);
+	assert((zseti(a, -1), zptest(a, 100)), == NONPRIME);
+	assert((zseti(a, 0), zptest(a, 100)), == NONPRIME);
+	assert((zseti(a, 1), zptest(a, 100)), == NONPRIME);
+	assert((zseti(a, 2), zptest(a, 100)), == PRIME);
+	assert((zseti(a, 3), zptest(a, 100)), == PRIME);
+	assert((zseti(a, 4), zptest(a, 100)), == NONPRIME);
+	assert((zseti(a, 5), zptest(a, 100)), != NONPRIME);
+	assert((zseti(a, 6), zptest(a, 100)), == NONPRIME);
+	assert((zseti(a, 7), zptest(a, 100)), != NONPRIME);
+	assert((zseti(a, 8), zptest(a, 100)), == NONPRIME);
+	assert((zseti(a, 9), zptest(a, 100)), == NONPRIME);
+	assert((zseti(a, 10), zptest(a, 100)), == NONPRIME);
+	assert((zseti(a, 11), zptest(a, 100)), != NONPRIME);
+	assert((zseti(a, 101), zptest(a, 100)), != NONPRIME);
+
+	zfree(a), zfree(b), zfree(c), zfree(d), zfree(_0), zfree(_1), zfree(_2), zfree(_3);
 	zunsetup();
+	return 0;
 }

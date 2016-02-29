@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <string.h>
 
 
 #ifndef FAST_RANDOM_PATHNAME
@@ -15,23 +16,47 @@
 #endif
 
 
+extern z_t zahl_tmp_f;
+
 static void
 zrand_get_random_bits(z_t r, size_t bits, int fd)
 {
 	ssize_t read_just;
-	size_t read_total = 0;
-	for (; read_total < sizeof(*r); read_total += read_just)
-		read_just = read(fd, (char *)r + read_total, sizeof(*r) - read_total);
-	*r &= (1 << bits) - 1;
+	size_t read_total, n, chars = (bits + 31) >> 5;
+	if (!bits) {
+		r->sign = 0;
+		return;
+	}
+	if (r->alloced < chars) {
+		r->alloced = chars;
+		r->chars = realloc(r->chars, r->alloced * sizeof(*(r->chars)));
+	}
+	for (n = chars; n--;) {
+		for (read_total = 0; read_total < sizeof(*(r->chars)); read_total += read_just) {
+			read_just = read(fd,
+			                 (char *)(r->chars + n) + read_total,
+			                 sizeof(*(r->chars)) - read_total);
+			if (read_just < 0)
+				abort();
+		}
+	}
+	r->chars[chars - 1] &= ((uint32_t)1 << (bits & 31)) - 1;
+	r->used = chars;
+	r->sign = 0;
+	for (n = chars; n--;) {
+		if (r->chars[n]) {
+			r->sign = 1;
+			break;
+		}
+	}
 }
 
 void /* Pick r uniformly random from [0, n] ∩ ℤ. */
-zrand(z_t r, z_t n, enum zranddev dev, enum zranddist dist)
+zrand(z_t r, z_t n, enum zranddev dev, enum zranddist dist, ...)
 {
 	const char *pathname = 0;
-	int fd;
 	size_t bits;
-	long long int _1 = 1;
+	int fd;
 
 	switch (dev) {
 	case FAST_RANDOM:
@@ -44,8 +69,8 @@ zrand(z_t r, z_t n, enum zranddev dev, enum zranddist dist)
 		abort();
 	}
 
-	if (*n == 0) {
-		*r = 0;
+	if (!n->sign) {
+		r->sign = 0;
 		return;
 	}
 
@@ -55,7 +80,8 @@ zrand(z_t r, z_t n, enum zranddev dev, enum zranddist dist)
 	case QUASIUNIFORM:
 		bits = zbits(n);
 		zrand_get_random_bits(r, bits, fd);
-		zadd(r, r, &_1);
+		zsetu(zahl_tmp_f, 1);
+		zadd(r, r, zahl_tmp_f);
 		zmul(r, r, n);
 		zrsh(r, r, bits);
 		break;
@@ -73,4 +99,3 @@ zrand(z_t r, z_t n, enum zranddev dev, enum zranddist dist)
 
 	close(fd);
 }
-

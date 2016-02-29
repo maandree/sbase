@@ -88,7 +88,7 @@ pollards_rho(z_t factor)
 	stack_bottom = stack;
 
 	QUEUE(factor);
-	zseti(c, POLLARDS_RHO_INITIAL_SEED);
+	zsetu(c, POLLARDS_RHO_INITIAL_SEED);
 
 next:
 	if (stack == stack_bottom)
@@ -124,7 +124,7 @@ start_over:
 				output_prime(factor);
 				break;
 			} else {
-				zseti(tmp, POLLARDS_RHO_SEED_INCREASEMENT);
+				zsetu(tmp, POLLARDS_RHO_SEED_INCREASEMENT);
 				zadd(c, tmp, c);
 				goto start_over;
 			}
@@ -164,7 +164,7 @@ factor(char *integer_str)
 
 	zsets(integer, integer_str);
 #ifdef DEBUG
-	zseti(result, 1);
+	zsetu(result, 1);
 	zset(expected, integer);
 #endif
 
@@ -237,11 +237,11 @@ main(int argc, char *argv[])
 #define X(i, v)\
 	while (--n >= i) pollards_rho_seeds_i[n] = i;\
 	zinit(pollards_rho_seeds[i]);\
-	zseti(pollards_rho_seeds[i], v);
+	zsetu(pollards_rho_seeds[i], v);
 	LIST_POLLARDS_RHO_SEEDS;
 #undef X
 
-#define X(x)  zinit(constants[x]), zseti(constants[x], x);
+#define X(x)  zinit(constants[x]), zsetu(constants[x], x);
 	X(0); X(1); LIST_TINY_PRIMES;
 #undef X
 	zinit(integer);
