@@ -1,0 +1,84 @@
+.Dd 2016-02-21
+.Dt BDIFF 1
+.Os sbase
+.Sh NAME
+.Nm bdiff
+.Nd compare two big files
+.Sh SYNOPSIS
+.Nm
+.Op Fl c | C Ar n | Fl e | f | u | U Ar n
+.Op Fl bdDr
+.Ar file1 file2
+.Sh DESCRIPTION
+.Nm
+compares the contents of two files and prints
+the set of changes necessary to modify
+.Ar file1
+into
+.Ar file2 .
+.Pp
+Unlike
+.Xr diff 1 ,
+.Nm
+is designed to be able to compare huge files
+and files with vast about of differences. This
+comes at the cost of the result seldom being
+minimal.
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl b
+Ignore changes in trailing whitespace.
+.It Fl c
+Produce output with three lines of copied context.
+.It Fl C Ar n
+Produce output with
+.Ar n
+lines of copied context. If
+.Ar n
+is -1, use the entire file for context.
+.It Fl d
+Ignored. Exists for symmetry with
+.Xr diff 1 .
+.It Fl D
+Produce colored output if stdout, is a terminal.
+Always produce colored output if used twice or more.
+.It Fl e
+Produce output suitable as input to
+.Xr ed 1 .
+.It Fl f
+Produce output similar to the format of
+.Fl e ,
+but intended for reading by a human.
+.It Fl r
+Apply
+.Nm
+recursively to subdirectories of
+.Ar file1
+and
+.Ar file2 .
+.It Fl u
+Produce output with three lines of unified context.
+.It Fl U Ar n
+Produce output with
+.Ar n
+lines of unified context. If
+.Ar n
+is -1, use the entire file for context.
+.El
+.Sh EXIT STATUS
+.Bl -tag -width Ds
+.It 0
+The files are identical.
+.It 1
+The files are different.
+.It 3
+Binary files are different.
+.It > 3
+An error occurred.
+.El
+.Sh SEE ALSO
+.Xr cmp 1 ,
+.Xr comm 1 ,
+.Xr diff 1 ,
+.Xr ed 1 ,
+.Xr patch 1

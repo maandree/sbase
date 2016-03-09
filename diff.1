@@ -1,0 +1,107 @@
+.Dd 2016-02-18
+.Dt DIFF 1
+.Os sbase
+.Sh NAME
+.Nm diff
+.Nd compare two files
+.Sh SYNOPSIS
+.Nm
+.Op Fl c | C Ar n | Fl e | f | u | U Ar n
+.Op Fl bdDr
+.Ar file1 file2
+.Sh DESCRIPTION
+.Nm
+compares the contents of two files and prints
+the minimal set of changes necessary to modify
+.Pp
+If
+.Nm
+detemines that it is too difficult to calculate
+the minimal set of changes fast enough and without
+usage too much memory,
+.Nm
+will fall back to behave like
+.Xr bdiff 1 ,
+unless
+.Fl d
+is used, and the exit status will not be 2
+instead of 1.
+.Ar file1
+into
+.Ar file2 .
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl b
+Ignore changes in trailing whitespace.
+.It Fl c
+Produce output with three lines of copied context.
+.It Fl C Ar n
+Produce output with
+.Ar n
+lines of copied context. If
+.Ar n
+is -1, use the entire file for context.
+.It Fl d
+Do not fall back to behave like
+.Xr bdiff 1 ,
+even if its appears to be impossible to calculate
+the minimal set of changes.
+.It Fl D
+Produce colored output if stdout, is a terminal.
+Always produce colored output if used twice or more.
+.It Fl e
+Produce output suitable as input to
+.Xr ed 1 .
+.It Fl f
+Produce output similar to the format of
+.Fl e ,
+but intended for reading by a human.
+.It Fl r
+Apply
+.Nm
+recursively to subdirectories of
+.Ar file1
+and
+.Ar file2 .
+.It Fl u
+Produce output with three lines of unified context.
+.It Fl U Ar n
+Produce output with
+.Ar n
+lines of unified context. If
+.Ar n
+is -1, use the entire file for context.
+.El
+.Sh EXIT STATUS
+.Bl -tag -width Ds
+.It 0
+The files are identical.
+.It 1
+The files are different, output is minimal.
+.It 2
+The files are different, output is not necessarily minimal.
+.It 3
+Binary files are different.
+.It > 3
+An error occurred.
+.El
+.Sh SEE ALSO
+.Xr bdiff 1 ,
+.Xr cmp 1 ,
+.Xr comm 1 ,
+.Xr ed 1 ,
+.Xr patch 1
+.Sh STANDARDS
+The
+.Nm
+utility is compliant with the
+.St -p1003.1-2013
+specification, except exit status 1 has been split to
+exit status 1, 2, and 3, and exit status > 1 has been
+shifted to > 3, and the output is only minimal if
+determined to be feasible to calculate with generally
+exceptable time and memory usage.
+.Pp
+The
+.Op Fl dD
+flags is an extension to that specification.

@@ -60,6 +60,7 @@ LIBUTILSRC =\
 	libutil/md5.c\
 	libutil/mkdirp.c\
 	libutil/mode.c\
+	libutil/ncprintf.c\
 	libutil/parseoffset.c\
 	libutil/putword.c\
 	libutil/reallocarray.c\
@@ -97,6 +98,7 @@ BIN =\
 	cron\
 	cut\
 	date\
+	diff\
 	dirname\
 	du\
 	echo\
@@ -181,7 +183,7 @@ LIBUTFOBJ = $(LIBUTFSRC:.c=.o)
 LIBUTILOBJ = $(LIBUTILSRC:.c=.o)
 OBJ = $(BIN:=.o) $(LIBUTFOBJ) $(LIBUTILOBJ)
 SRC = $(BIN:=.c)
-MAN = $(BIN:=.1)
+MAN = $(BIN:=.1) bdiff.1
 
 all: $(BIN)
 
@@ -211,7 +213,7 @@ confstr_l.h limits_l.h sysconf_l.h pathconf_l.h: getconf.sh
 install: all
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
 	cp -f $(BIN) $(DESTDIR)$(PREFIX)/bin
-	cd $(DESTDIR)$(PREFIX)/bin && ln -f test [ && chmod 755 $(BIN)
+	cd $(DESTDIR)$(PREFIX)/bin && ln -f test [ && ln -f diff bdiff && chmod 755 $(BIN)
 	mv -f $(DESTDIR)$(PREFIX)/bin/xinstall $(DESTDIR)$(PREFIX)/bin/install
 	mkdir -p $(DESTDIR)$(MANPREFIX)/man1
 	for m in $(MAN); do sed "s/^\.Os sbase/.Os sbase $(VERSION)/g" < "$$m" > $(DESTDIR)$(MANPREFIX)/man1/"$$m"; done
@@ -219,8 +221,8 @@ install: all
 	mv -f $(DESTDIR)$(MANPREFIX)/man1/xinstall.1 $(DESTDIR)$(MANPREFIX)/man1/install.1
 
 uninstall:
-	cd $(DESTDIR)$(PREFIX)/bin && rm -f $(BIN) [ install
-	cd $(DESTDIR)$(MANPREFIX)/man1 && rm -f $(MAN)
+	cd $(DESTDIR)$(PREFIX)/bin && rm -f $(BIN) [ install bdiff
+	cd $(DESTDIR)$(MANPREFIX)/man1 && rm -f $(MAN) install.1
 
 dist: clean
 	mkdir -p sbase-$(VERSION)
@@ -243,6 +245,7 @@ sbase-box: $(LIB) $(SRC)
 	echo 'int main(int argc, char *argv[]) { char *s = basename(argv[0]);'                                                        >> build/$@.c
 	echo 'if(!strcmp(s,"sbase-box")) { argc--; argv++; s = basename(argv[0]); } if(0) ;'                                          >> build/$@.c
 	echo "else if (!strcmp(s, \"install\")) return xinstall_main(argc, argv);"                                                    >> build/$@.c
+	echo "else if (!strcmp(s, \"bdiff\")) return diff_main(argc, argv);"                                                          >> build/$@.c
 	echo "else if (!strcmp(s, \"[\")) return test_main(argc, argv);"                                                              >> build/$@.c
 	for f in $(SRC); do echo "else if(!strcmp(s, \"$${f%.c}\")) return $$(echo "$${f%.c}" | sed s/-/_/g)_main(argc, argv);"; done >> build/$@.c
 	echo 'else { fputs("[ ", stdout);'                                                                                            >> build/$@.c
@@ -257,6 +260,7 @@ sbase-box-install: sbase-box
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/sbase-box
 	for f in $(BIN); do ln -sf sbase-box $(DESTDIR)$(PREFIX)/bin/"$$f"; done
 	ln -sf sbase-box $(DESTDIR)$(PREFIX)/bin/[
+	ln -sf sbase-box $(DESTDIR)$(PREFIX)/bin/bdiff
 	mv -f $(DESTDIR)$(PREFIX)/bin/xinstall $(DESTDIR)$(PREFIX)/bin/install
 	mkdir -p $(DESTDIR)$(MANPREFIX)/man1
 	for m in $(MAN); do sed "s/^\.Os sbase/.Os sbase $(VERSION)/g" < "$$m" > $(DESTDIR)$(MANPREFIX)/man1/"$$m"; done

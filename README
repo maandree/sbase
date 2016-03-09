@@ -13,6 +13,7 @@ The following tools are implemented:
      UTILITY         MISSING
      -------         -------
 0=*|o basename        .
+ =* x bdiff           .
 0=*|o cal             .
 0=*|o cat             .
 0=*|o chgrp           .
@@ -27,6 +28,7 @@ The following tools are implemented:
 0=*|x cron            .
  #*|o cut             .
 0=*|o date            .
+ =* o diff            .
 0=*|o dirname         .
 0=*|o du              .
 0=*|o echo            .
