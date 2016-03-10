@@ -1211,7 +1211,7 @@ load_lines(const char *pathname)
 	rc->attr = attr;
 	rc->path = pathname;
 	rc->path_quoted = buffer + ptr + 1 + sizeof(COLOURED_NO_LF_MARK);
-	memcpy(rc->path_quoted, quoted, strlen(quoted) + 1);
+	strcpy(rc->path_quoted, quoted);
 	rc->is_binary = bin;
 	rc->is_empty = (ptr == 0);
 	free(quoted);
@@ -1283,11 +1283,15 @@ compare_files(struct file_data *old, struct file_data *new, const char *diff_lin
 	       fflag ? output_ed_alternative :
 	               output_normal)(old, new, diff_line);
 
-	if ((eflag || fflag) && 1 <= ret && ret <= 2) {
-		if (!old->lf_terminated && !old->is_empty)
-			ret = 2, fprintf(stderr, "%s: %s: No newline at end of file\n\n", argv0, old->path);
-		if (!new->lf_terminated && !new->is_empty)
-			ret = 2, fprintf(stderr, "%s: %s: No newline at end of file\n\n", argv0, new->path);
+	if ((eflag || fflag) && FILES_DIFFER <= ret && ret <= NOT_MINIMAL) {
+		if (!old->lf_terminated && !old->is_empty) {
+			ret = FAILURE;
+			fprintf(stderr, "%s: %s: No newline at end of file\n\n", argv0, old->path);
+		}
+		if (!new->lf_terminated && !new->is_empty) {
+			ret = FAILURE;
+			fprintf(stderr, "%s: %s: No newline at end of file\n\n", argv0, new->path);
+		}
 	}
 
 	return ret;
