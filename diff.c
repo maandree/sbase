@@ -48,7 +48,6 @@
 
 #define END_OF_PATH          127
 #define NO_LF_MARK           "\n\\ No newline at end of file"
-#define COLOURED_NO_LF_MARK  "\n\033[7m\\ No newline at end of file\033[27m"
 
 #define line_eq(a, b)  ((a)->hash == (b)->hash && !strcmp((a)->line, (b)->line))
 #define intcmp(a, b)   ((a) < (b) ? -1 : (a) > (b))
@@ -107,14 +106,11 @@ static int bdiff = 0;
 static int dflag = 0;
 static int cheap_algorithm_used = 0;
 
-static int use_colour = 0;
-static int (*cprintf)(const char *, ...);
-
 
 static void
 usage(void)
 {
-	enprintf(FAILURE, "usage: %s [-c | -C n | -e | -f | -u | -U n] [-bdDr] file1 file2\n", argv0);
+	enprintf(FAILURE, "usage: %s [-c | -C n | -e | -f | -u | -U n] [-bdr] file1 file2\n", argv0);
 }
 
 static int
@@ -903,11 +899,11 @@ get_diff_chunks(struct trace *path, size_t an, size_t bn, struct chunk **headp, 
 	if (!path)\
 		return 0;\
 	if (diff_line)\
-		cprintf("\033[1m%s %s %s\033[m\n", diff_line, old->path_quoted, new->path_quoted)
+		printf("%s %s %s\n", diff_line, old->path_quoted, new->path_quoted)
 
 #define OUTPUT_HEAD(A, B, TIMEFUN)\
-	cprintf("\033[1m"A" %s\033[21m\t%s\033[0m\n", old->path_quoted, TIMEFUN(&(old->attr)));\
-	cprintf("\033[1m"B" %s\033[21m\t%s\033[0m\n", new->path_quoted, TIMEFUN(&(new->attr)))
+	printf(A" %s\t%s\n", old->path_quoted, TIMEFUN(&(old->attr)));\
+	printf(B" %s\t%s\n", new->path_quoted, TIMEFUN(&(new->attr)))
 
 #define OUTPUT_QUEUE\
 	get_diff_chunks(path, old->line_count * !old->is_empty, new->line_count * !new->is_empty, &head, &tail);\
@@ -964,18 +960,18 @@ output_unified(struct file_data *old, struct file_data *new, const char *diff_li
 		}
 		if (suppressed) {
 			suppressed = 0;
-			cprintf("\033[1;34m@@ -%zu", ai + 1 - !trace.a_len);
+			printf("@@ -%zu", ai + 1 - !trace.a_len);
 			if (trace.a_len != 1)
 				printf(",%zu", trace.a_len);
 			printf(" +%zu", bi + 1 - !trace.b_len);
 			if (trace.b_len != 1)
 				printf(",%zu", trace.b_len);
-			cprintf(" @@\033[m\n");
+			printf(" @@\n");
 		}
 		if (f == 0)
 			printf(" %s\n", a[ai]);
 		else
-			cprintf("\033[3%im%c%s\033[m\n", (int)f, " -+"[(int)f], f == 1 ? a[ai] : b[bi]);
+			printf("%c%s\n", " -+"[(int)f], f == 1 ? a[ai] : b[bi]);
 	next:
 		ai += f != 2;
 		bi += f != 1;
@@ -989,15 +985,15 @@ static int
 output_copied(struct file_data *old, struct file_data *new, const char *diff_line)
 {
 #define PRINT_PART(L, C, S, A, B)\
-	cprintf("\033[1;3"#C"m"A" %zu", L##i + 1);\
+	printf(A" %zu", L##i + 1);\
 	if (chunk->L##_len > 1)\
 		printf(",%zu", L##i + chunk->L##_len);\
-	cprintf(" "B"\033[m\n");\
+	printf(" "B"\n");\
 	for (; have_##L && chunk->f != END_OF_PATH && chunk->d <= n_context; chunk++) {\
 		if (chunk->f == 0)\
 			printf("  %s\n", L[L##i]);\
 		else if (chunk->f != (3 - C))\
-			cprintf("\033[3%im%c %s\033[m\n", chunk->ch ? 3 : C, S"!"[chunk->ch], L[L##i]);\
+			printf("%c %s\n", S"!"[chunk->ch], L[L##i]);\
 		L##i += chunk->f != (3 - C);\
 	}
 
@@ -1006,7 +1002,7 @@ output_copied(struct file_data *old, struct file_data *new, const char *diff_lin
 	OUTPUT_HEAD("***", "---", get_time_string_copied);
 	OUTPUT_QUEUE;
 
-	cprintf("\033[1;34m***************\033[m\n");
+	printf("***************\n");
 	chunk_old = chunk;
 	PRINT_PART(a, 1, "-", "***", "****");
 	chunk = chunk_old;
@@ -1024,7 +1020,7 @@ output_normal(struct file_data *old, struct file_data *new, const char *diff_lin
 		if (chunk->f == 0)\
 			printf("  %s\n", L[L##i]);\
 		else if (chunk->f != (3 - C))\
-			cprintf("\033[3"#C"m"S" %s\033[m\n", L[L##i]);\
+			printf(S" %s\n", L[L##i]);\
 		L##i += chunk->f != (3 - C);\
 	}
 
@@ -1032,19 +1028,19 @@ output_normal(struct file_data *old, struct file_data *new, const char *diff_lin
 	OUTPUT_DIFF;
 	OUTPUT_QUEUE;
 
-	cprintf("\033[1;34m%zu", ai + 1 - !have_a);
+	printf("%zu", ai + 1 - !have_a);
 	if (chunk->a_len > 1)
 		printf(",%zu", ai + chunk->a_len);
 	printf("%c", " dac"[have_a + 2 * have_b]);
 	printf("%zu", bi + 1 - !have_b);
 	if (chunk->b_len > 1)
 		printf(",%zu", bi + chunk->b_len);
-	cprintf("\033[m\n");
+	printf("\n");
 
 	chunk_old = chunk;
 	PRINT_PART(a, 1, "<");
 	if (have_a && have_b)
-		cprintf("\033[34m---\033[m\n");
+		printf("---\n");
 	chunk = chunk_old;
 	PRINT_PART(b, 2, ">");
 
@@ -1068,8 +1064,7 @@ output_ed(struct file_data *old, struct file_data *new, const char *diff_line)
 		printf("%c\n", "ac"[chunk->ch]);
 		for (; chunk->f != END_OF_PATH && chunk->d <= n_context; chunk++) {
 			if (chunk->f != 1)
-				cprintf("\033[3%im%s%s\033[m\n", chunk->ch ? 3 : 2,
-				        b[bi][0] == '.' ? "." : "", b[bi]);
+				printf("%s%s\n", b[bi][0] == '.' ? "." : "", b[bi]);
 			have_dot = (chunk->f == 2 && b[bi][0] == '.');
 			if (have_dot) {
 				printf(".\ns/.//\n");
@@ -1099,7 +1094,7 @@ output_ed_alternative(struct file_data *old, struct file_data *new, const char *
 		printf("\n");
 		for (; chunk->f != END_OF_PATH && chunk->d <= n_context; chunk++) {
 			if (chunk->f != 1)
-				cprintf("\033[3%im%s\033[m\n", chunk->ch ? 3 : 2, b[bi]);
+				printf("%s\n", b[bi]);
 			bi += chunk->f != 1;
 		}
 		printf(".\n");
@@ -1201,7 +1196,7 @@ load_lines(const char *pathname)
 	quoted = quote(pathname);
 	rc = enrealloc(FAILURE, buffer,
 	               sizeof(*rc) + (n + 1) * sizeof(char *) +
-	               (ptr + 1 + sizeof(COLOURED_NO_LF_MARK)) + strlen(quoted) + 1);
+	               (ptr + 1 + sizeof(NO_LF_MARK)) + strlen(quoted) + 1);
 	buffer = ((char *)rc) + sizeof(*rc) + (n + 1) * sizeof(char *);
 	memmove(buffer, rc, ptr);
 	rc->lines = (char **)((char *)rc + sizeof(*rc));
@@ -1210,7 +1205,7 @@ load_lines(const char *pathname)
 	buffer[ptr - rc->lf_terminated] = 0;
 	rc->attr = attr;
 	rc->path = pathname;
-	rc->path_quoted = buffer + ptr + 1 + sizeof(COLOURED_NO_LF_MARK);
+	rc->path_quoted = buffer + ptr + 1 + sizeof(NO_LF_MARK);
 	strcpy(rc->path_quoted, quoted);
 	rc->is_binary = bin;
 	rc->is_empty = (ptr == 0);
@@ -1261,7 +1256,7 @@ compare_files(struct file_data *old, struct file_data *new, const char *diff_lin
 
 	if (old->is_binary || new->is_binary) {
 		if (do_binaries_differ(old, new)) {
-			cprintf("\033[1mBinary files %s and %s differ\033[m\n", old->path, new->path);
+			printf("Binary files %s and %s differ\n", old->path, new->path);
 			return BINARIES_DIFFER;
 		}
 		return 0;
@@ -1272,9 +1267,9 @@ compare_files(struct file_data *old, struct file_data *new, const char *diff_lin
 
 	if (!eflag && !fflag) {
 		if (!old->lf_terminated && !old->is_empty)
-			strcat(old->lines[old->line_count - 1], use_colour ? COLOURED_NO_LF_MARK : NO_LF_MARK);
+			strcat(old->lines[old->line_count - 1], NO_LF_MARK);
 		if (!new->lf_terminated && !new->is_empty)
-			strcat(new->lines[new->line_count - 1], use_colour ? COLOURED_NO_LF_MARK : NO_LF_MARK);
+			strcat(new->lines[new->line_count - 1], NO_LF_MARK);
 	}
 
 	ret = (uflag ? output_unified :
@@ -1320,7 +1315,7 @@ again:
 			continue;
 		b_path = join_paths(paths[j], file->d_name);
 		if (access(b_path, F_OK)) {
-			cprintf("\033[1mOnly in %s: %s\033[m\n", paths[i], file->d_name);
+			printf("Only in %s: %s\n", paths[i], file->d_name);
 			ret = ret > FILES_DIFFER ? ret : FILES_DIFFER;
 			goto next;
 		} else if (i == 1) {
@@ -1340,11 +1335,11 @@ again:
 		b = load_lines(b_path);
 
 		if (!a ^ !b) {
-			cprintf("\033[1mFile %s is a %s while file %s is a %s\033[m\n",
+			printf("File %s is a %s while file %s is a %s\n",
 			       a_path, classify(a), b_path, classify(b));
 			r = FILES_DIFFER;
 		} else if (!a && !b && !rflag) {
-			cprintf("\033[1mCommon subdirectories: %s and %s\033[m\n", a_path, b_path);
+			printf("Common subdirectories: %s and %s\n", a_path, b_path);
 			r = 0;
 		} else if (!a && !b) {
 			r = compare_directories(a_path, b_path, diff_line);
@@ -1399,13 +1394,12 @@ main(int argc, char *argv[])
 	case 'b':  bflag++;  break;
 	case 'c':  cflag++;  n_context = 3;                     break;
 	case 'C':  cflag++;  n_context = atol(EARGF(usage()));  break;
+	case 'd':  dflag++;  break;
 	case 'e':  eflag++;  break;
 	case 'f':  fflag++;  break;
+	case 'r':  rflag++;  break;
 	case 'u':  uflag++;  n_context = 3;                     break;
 	case 'U':  uflag++;  n_context = atol(EARGF(usage()));  break;
-	case 'r':  rflag++;  break;
-	case 'd':  dflag++;  break;
-	case 'D':  use_colour++;  break;
 	default:
 		usage();
 	} ARGEND;
@@ -1424,15 +1418,12 @@ main(int argc, char *argv[])
 			bdiff = 1;
 	}
 
-	use_colour = use_colour == 1 ? isatty(STDOUT_FILENO) : use_colour;
-	cprintf = use_colour ? printf : ncprintf;
-
 redo:
 	old = load_lines(old_proper ? old_proper : argv[0]);
 	new = load_lines(new_proper ? new_proper : argv[1]);
 
 	if ((old_proper || new_proper) && (!old || !new)) {
-		cprintf("\033[1mFile %s is a %s while file %s is a %s\033[m\n",
+		printf("File %s is a %s while file %s is a %s\n",
 		       old_proper ? old_proper : argv[0], classify(old),
 		       new_proper ? new_proper : argv[1], classify(new));
 		ret = 1;

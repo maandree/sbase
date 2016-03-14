@@ -7,7 +7,7 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl c | C Ar n | Fl e | f | u | U Ar n
-.Op Fl bdDr
+.Op Fl bdr
 .Ar file1 file2
 .Sh DESCRIPTION
 .Nm
@@ -39,15 +39,11 @@ is -1, use the entire file for context.
 .It Fl d
 Ignored. Exists for symmetry with
 .Xr diff 1 .
-.It Fl D
-Produce colored output if stdout, is a terminal.
-Always produce colored output if used twice or more.
 .It Fl e
 Produce output suitable as input to
 .Xr ed 1 .
 .It Fl f
-Produce output similar to the format of
-.Fl e ,
+Produce \fIed\fP-script like output,
 but intended for reading by a human.
 .It Fl r
 Apply
@@ -66,7 +62,7 @@ lines of unified context. If
 is -1, use the entire file for context.
 .El
 .Sh EXIT STATUS
-.Bl -tag -width Ds
+.Bl -tag -width s
 .It 0
 The files are identical.
 .It 1

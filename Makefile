@@ -60,7 +60,6 @@ LIBUTILSRC =\
 	libutil/md5.c\
 	libutil/mkdirp.c\
 	libutil/mode.c\
-	libutil/ncprintf.c\
 	libutil/parseoffset.c\
 	libutil/putword.c\
 	libutil/reallocarray.c\

@@ -7,7 +7,7 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl c | C Ar n | Fl e | f | u | U Ar n
-.Op Fl bdDr
+.Op Fl bdr
 .Ar file1 file2
 .Sh DESCRIPTION
 .Nm
@@ -46,15 +46,11 @@ Do not fall back to behave like
 .Xr bdiff 1 ,
 even if its appears to be impossible to calculate
 the minimal set of changes.
-.It Fl D
-Produce colored output if stdout, is a terminal.
-Always produce colored output if used twice or more.
 .It Fl e
 Produce output suitable as input to
 .Xr ed 1 .
 .It Fl f
-Produce output similar to the format of
-.Fl e ,
+Produce \fIed\fP-script like output,
 but intended for reading by a human.
 .It Fl r
 Apply
@@ -103,5 +99,5 @@ determined to be feasible to calculate with generally
 exceptable time and memory usage.
 .Pp
 The
-.Op Fl dD
+.Op Fl d
 flags is an extension to that specification.
