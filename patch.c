@@ -1727,7 +1727,7 @@ main(int argc, char *argv[])
 {
 	struct patchset patchset;
 	struct file_data patchfile_data;
-	char *p, *Dflag;
+	char *p, *Dflag = 0;
 
 	stdin_dash[0] = stdout_dash[0] = '-';
 	stdin_dash[1] = stdout_dash[1] = '\0';
