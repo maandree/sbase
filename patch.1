@@ -1,0 +1,250 @@
+.Dd 2016-03-20
+.Dt PATCH 1
+.Os sbase
+.Sh NAME
+.Nm patch
+.Nd apply patches to files
+.Sh SYNOPSIS
+.Nm
+.Op Fl c | e | n | u
+.Op Fl d Ar dir
+.Op Fl D Ar define
+.Op Fl o Ar outfile
+.Op Fl p Ar num
+.Op Fl r Ar rejectfile
+.Op Fl bflNRU
+.Po
+.Fl i Ar patchfile
+| <
+.Ar patchfile
+.Pc
+.Op Ar file
+.Sh DESCRIPTION
+.Nm
+applies patches to files from difference listings
+produces by
+.Xr diff 1 .
+.Pp
+.Nm
+will skip any garbage unless the
+.Ar patchfile
+consists entirely of garbage.
+Garbage is any data that does not conform to any
+of the supported difference listings formats.
+.Nm
+supprts the all difference listings formats
+specified in
+.Xr diff 1p
+except
+.Fl f
+flag in
+.Xr diff 1p .
+.Pp
+.Nm
+shall, unless the
+.Ar file
+is specify, figure out from mentions of filenames
+in the
+.Ar patchfile
+which files to patch. As an extension to the
+standard, this implementation of
+.Nm
+can determine the filename by looking at the
+\fIdiff\fP-lines that are produced by
+.Xr diff 1
+when comparing directories. If however, the
+.Ar file
+is specified, all patches in the
+.Ar patchfile
+shall be applied to that
+.Ar file .
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl b
+Back up files before the first time they a patch
+is applied to them. The backups will have the
+suffix \fI.orig\fP.
+.It Fl c
+Treat anything that is not conforming to the
+copied context format as garbage.
+.It Fl d Ar dir
+Prepend
+.Ar dir
+to all filenames that appear in the patchfile.
+.It Fl D Ar define
+Mark added lines with the C preprocessor construct
+.Bd -literal -offset left
+    #ifdef \fIdefine\fP
+    ...
+    #endif
+.Ed
+
+Mark removed lines with the C preprocessor construct
+.Bd -literal -offset left
+    #ifndef \fIdefine\fP
+    ...
+    #endif
+.Ed
+
+Mark changed lines with the C preprocessor construct
+.Bd -literal -offset left
+    #ifdef \fIdefine\fP
+    ...
+    #else
+    ...
+    #endif
+.Ed
+
+As an extension to the standard,
+.Ar define
+can be \fI1\fP or \fI0\fP to use
+.Bd -literal -offset left
+    #if 1
+    #if 0
+.Ed
+
+(swap those lines if
+.Ar define
+is \fI0\fP) instead of 
+.Bd -literal -offset left
+    #ifdef \fIdefine\fP
+    #ifndef \fIdefine\fP
+.Ed
+
+As another extension to the standard, if
+.Ar define
+begins with an exclamation point (\fB!\fP),
+.Bd -literal -offset left
+    #ifdef \fIdefine\fP
+    #if 1
+.Ed
+
+and
+.Bd -literal -offset left
+    #ifndef \fIdefine\fP
+    #if 0
+.Ed
+
+are swapped.
+
+.Nm
+does not guarantee that a patch C source code file
+will be at least a syntactically correct after patching
+as before patching. Despite this being implied by
+the standard. The syntactically correctness can be
+broken when edits are made on lines splitted using
+line continuation, made in comments, or span
+CPP conditional directives.
+.It Fl e
+Treat anything that is not conforming to the
+\fIed\fP-script format as garbage.
+.It Fl f
+
+.It Fl i Ar patchfile
+Read the
+.Ar patchfile
+instead of standard output.
+.It Fl l
+Any sequnce of whitespace, of at least length 1,
+in the input file file shall match any sequnce
+of whitespace, of at least length 1 in the
+difference script when testing if lines match.
+Additionally any whitespace at the beginning of
+a line or at the end of a line is ignored when
+matching lines, the former case is an extension
+of the standard.
+.It Fl n
+Treat anything that is not conforming to the
+normal format as garbage.
+.It Fl N
+Ignore already applied hunks. POSIX specifies
+that already applied patches shall be ignored
+if this flag is used. A hunk is a contiguous
+portion of a patch. A patch is a signal
+file-comparison output from
+.Xr diff 1 .
+.It Fl o Ar outfile
+Store resulting files from patches to
+.Ar outfile
+instead of to the patched file itself.
+If the patchfile patches multiple files,
+the results are concatenated. If a patchfile
+patches a file multiple times. Intermediary
+results are also stored.
+
+As an extension to the standard, you may use
+non-regular files such as \fI/dev/stdout\fP
+and \fI/dev/null\fP. \fI/dev/null\fP can be
+used to preform a dryrun.
+.It Fl p Ar num
+Remove the first
+.Ar num
+components from filenames that appear in the
+patchfile. Any leading / is regarded as the
+first component. If
+.Ar num
+is 0, the entire filename is used. If this flag
+is not used, only the basename is used.
+.It Fl r Ar rejectfile
+Save rejected hunks to
+.Ar rejectfile
+rather than to the \fIfilename.rej\fP where \fIfilename\fP
+is the filename of the file that is being patched. Rejected
+hunks are hunks that cannot be applied.
+
+Unless
+.Fl U
+is used, rejected hunks are stored in copied
+context format. However, the timestamps will
+be omitted.
+.It Fl R
+Retry to apply patches reversed before trying
+to apply them in normal direction.
+.It Fl u
+Treat anything that is not conforming to the
+unified context format as garbage.
+.It Fl U
+Store rejected hunks in unified context rather
+than copied context. Copied context is the
+default even for unified context patches.
+.El
+.Sh NOTES
+Files that become empty as a result of a patch
+are not remove.
+.Pp
+Symbolic links are treated as regular files,
+provided that they lead to regular files.
+.Pp
+Timestamps that appear in diff headers are not
+applied.
+.Pp
+Encapsulated patches, and patches with CRLF
+line breaks \(em or any other string \(em rather
+than LF line breaks are not supported.
+.Pp
+In this implementation, when the user is promted,
+the message is printed to \fI/dev/tty\fP, rather
+than \fI/dev/stdout\fP despite POSIX's mandate.
+This is to make it possible to use \fI/dev/stdout\fP
+as the output file.
+.Pp
+Unportable characters in filenames are supported
+by parsing as C string literals.
+.Pp
+In this implementation, the
+.Fl D
+flag can be used with \fIed\fP-script.
+.Sh SEE ALSO
+.Xr diff 1 ,
+.Xr ed 1
+.Sh STANDARDS
+The
+.Nm
+utility is compliant with the
+.St -p1003.1-2013
+specification except from some above noted exceptions.
+.Pp
+The
+.Op Fl fU
+flags are extensions to that specification,
+other extensions are noted above.

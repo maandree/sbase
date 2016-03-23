@@ -21,6 +21,11 @@
 
 extern char *argv0;
 
+#undef asprintf
+int asprintf(char **, const char *, ...);
+int easprintf(char **, const char *, ...);
+int enasprintf(int, char **, const char *, ...);
+
 void *ecalloc(size_t, size_t);
 void *emalloc(size_t);
 void *erealloc(void *, size_t);

@@ -45,6 +45,7 @@ LIBUTFSRC =\
 
 LIBUTIL = libutil.a
 LIBUTILSRC =\
+	libutil/asprintf.c\
 	libutil/concat.c\
 	libutil/cp.c\
 	libutil/crypt.c\
@@ -130,6 +131,7 @@ BIN =\
 	nl\
 	nohup\
 	od\
+	patch\
 	pathchk\
 	paste\
 	printenv\

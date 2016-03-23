@@ -8,7 +8,6 @@ awk
 bc
 diff
 ed manpage
-patch
 stty
 
 If you are looking for some work to do on sbase, another option is to

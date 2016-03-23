@@ -59,6 +59,7 @@ The following tools are implemented:
 0#*|o nl              .
 0=*|o nohup           .
 0=*|o od              .
+0=    patch           .
 0#* o pathchk         .
  #*|o paste           .
 0=*|x printenv        .
