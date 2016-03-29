@@ -141,7 +141,6 @@ BIN =\
 	rmdir\
 	sed\
 	seq\
-	setsid\
 	sha1sum\
 	sha224sum\
 	sha256sum\
