@@ -1,4 +1,4 @@
-.Dd 2015-10-08
+.Dd 2016-03-30
 .Dt GREP 1
 .Os sbase
 .Sh NAME
@@ -6,7 +6,7 @@
 .Nd search files for patterns
 .Sh SYNOPSIS
 .Nm
-.Op Fl EFHchilnqsvx
+.Op Fl EFHchilnqrsvx
 .Op Fl e Ar pattern
 .Op Fl f Ar file
 .Op Ar pattern
@@ -55,6 +55,10 @@ Print only the names of files with matching lines.
 Prefix each matching line with its line number in the input.
 .It Fl q
 Print nothing, only return status.
+.It Fl r
+Search directories recursively. If no
+.Ar file
+has been specified, the current working directory is searched.
 .It Fl s
 Suppress the error messages ordinarily written for nonexistent or unreadable
 files.
@@ -89,5 +93,5 @@ utility is compliant with the
 specification.
 .Pp
 The
-.Op Fl Hhw
+.Op Fl Hhrw
 flags are an extension to that specification.

@@ -1,10 +1,15 @@
 /* See LICENSE file for copyright and license details. */
+#include <sys/stat.h>
+
+#include <dirent.h>
+#include <errno.h>
 #include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
+#include "fs.h"
 #include "queue.h"
 #include "util.h"
 
@@ -21,12 +26,14 @@ static int eflag;
 static int fflag;
 static int hflag;
 static int iflag;
+static int rflag;
 static int sflag;
 static int vflag;
 static int wflag;
 static int xflag;
 static int many;
 static int mode;
+static int implicitcwd;
 
 struct pattern {
 	char *pattern;
@@ -163,22 +170,60 @@ end:
 	return match;
 }
 
+static int
+isdir(const char *path)
+{
+	struct stat st;
+	if (stat(path, &st))
+		return 0;
+	return S_ISDIR(st.st_mode);
+}
+
+static void
+grepdir(const char *path, struct stat *st, void *data, struct recursor *r)
+{
+	int m, *match = data;
+	FILE *fp;
+	if (implicitcwd) {
+		if (path[0] == '.' && path[1] == '/')
+			path += 2;
+	}
+	if (S_ISDIR(st->st_mode)) {
+		recurselater(path, data, r);
+		return;
+	}
+	if (!(fp = fopen(path, "r"))) {
+		if (!sflag)
+			weprintf("fopen %s:", *path);
+		*match = Error;
+		return;
+	}
+	m = grep(fp, path);
+	if (m == Error || (*match != Error && m == Match))
+		*match = m;
+	if (fshut(fp, path))
+		*match = Error;
+}
+
 static void
 usage(void)
 {
-	enprintf(Error, "usage: %s [-EFHchilnqsvwx] [-e pattern] [-f file] "
+	enprintf(Error, "usage: %s [-EFHchilnqrsvwx] [-e pattern] [-f file] "
 	         "[pattern] [file ...]\n", argv0);
 }
 
 int
 main(int argc, char *argv[])
 {
+	struct recursor r = { .fn = grepdir, .hist = NULL, .depth = 0, .maxdepth = 0,
+	                      .follow = 'H', .flags = BFS };
 	struct pattern *pnode;
 	int m, flags = REG_NOSUB, match = NoMatch;
 	FILE *fp;
 	char *arg;
 
 	SLIST_INIT(&phead);
+	TAILQ_INIT(&r.pending);
 
 	ARGBEGIN {
 	case 'E':
@@ -226,8 +271,12 @@ main(int argc, char *argv[])
 		flags |= REG_ICASE;
 		iflag = 1;
 		break;
+	case 'r':
+		rflag = 1;
+		break;
 	case 's':
 		sflag = 1;
+		r.flags |= SILENT;
 		break;
 	case 'v':
 		vflag = 1;
@@ -259,29 +308,40 @@ main(int argc, char *argv[])
 		/* Compile regex for all search patterns */
 		SLIST_FOREACH(pnode, &phead, entry)
 			enregcomp(Error, &pnode->preg, pnode->pattern, flags);
-	many = (argc > 1);
-	if (argc == 0) {
+	many = (argc > 1) || rflag;
+	if (argc == 0 && !rflag) {
 		match = grep(stdin, "<stdin>");
+	} else if (argc == 0 && rflag) {
+		implicitcwd = 1;
+		recurse(".", &match, &r);
 	} else {
-		for (; *argv; argc--, argv++) {
+		for (; argc; argc--, argv++) {
 			if (!strcmp(*argv, "-")) {
 				*argv = "<stdin>";
 				fp = stdin;
+			} else if (rflag && isdir(*argv)) {
+				fp = 0;
 			} else if (!(fp = fopen(*argv, "r"))) {
 				if (!sflag)
 					weprintf("fopen %s:", *argv);
 				match = Error;
 				continue;
 			}
-			m = grep(fp, *argv);
-			if (m == Error || (match != Error && m == Match))
-				match = m;
-			if (fp != stdin && fshut(fp, *argv))
+			if (fp) {
+				m = grep(fp, *argv);
+				if (m == Error || (match != Error && m == Match))
+					match = m;
+			} else {
+				recurse(*argv, &match, &r);
+			}
+			if (fp && fp != stdin && fshut(fp, *argv))
 				match = Error;
 		}
 	}
 
-	if (fshut(stdin, "<stdin>") | fshut(stdout, "<stdout>"))
+	recursenow(&r);
+
+	if (fshut(stdin, "<stdin>") | fshut(stdout, "<stdout>") | recurse_status)
 		match = Error;
 
 	return match;

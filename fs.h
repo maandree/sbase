@@ -2,25 +2,36 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "queue.h"
+
 struct history {
 	struct history *prev;
 	dev_t dev;
 	ino_t ino;
 };
 
+struct pendingrecurse {
+	char *path;
+	void *data;
+	int depth;
+	TAILQ_ENTRY(pendingrecurse) entry;
+};
+
 struct recursor {
-	void (*fn)(const char *, struct stat *st, void *, struct recursor *);
+	void (*fn)(const char *, struct stat *, void *, struct recursor *);
 	struct history *hist;
 	int depth;
 	int maxdepth;
 	int follow;
 	int flags;
+	TAILQ_HEAD(pending, pendingrecurse) pending;
 };
 
 enum {
 	SAMEDEV  = 1 << 0,
 	DIRFIRST = 1 << 1,
 	SILENT   = 1 << 2,
+	BFS      = 1 << 3,
 };
 
 extern int cp_aflag;
@@ -38,6 +49,8 @@ extern int rm_status;
 extern int recurse_status;
 
 void recurse(const char *, void *, struct recursor *);
+void recurselater(const char *, void *, struct recursor *);
+void recursenow(struct recursor *);
 
 int cp(const char *, const char *, int);
-void rm(const char *, struct stat *st, void *, struct recursor *);
+void rm(const char *, struct stat *, void *, struct recursor *);

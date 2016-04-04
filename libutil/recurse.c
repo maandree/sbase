@@ -96,12 +96,55 @@ recurse(const char *path, void *data, struct recursor *r)
 		if (!(r->flags & DIRFIRST))
 			(r->fn)(path, &st, data, r);
 
-		for (; r->hist; ) {
-			h = r->hist;
-			r->hist = r->hist->prev;
-			free(h);
+		if (!(r->flags & BFS)) {
+			while (r->hist) {
+				h = r->hist;
+				r->hist = r->hist->prev;
+				free(h);
+			}
 		}
 	}
 
 	closedir(dp);
+}
+
+void
+recurselater(const char *path, void *data, struct recursor *r)
+{
+	struct pendingrecurse *elem = malloc(sizeof(*elem));
+	if (!elem && !(r->flags & SILENT)) {
+		weprintf("malloc:");
+		recurse_status = 1;
+		return;
+	}
+	elem->path = estrdup(path);
+	elem->data = data;
+	elem->depth = r->depth;
+	TAILQ_INSERT_TAIL(&r->pending, elem, entry);
+}
+
+void
+recursenow(struct recursor *r)
+{
+	struct pendingrecurse *elem;
+	char *path;
+	void *data;
+	struct history *h;
+
+	while (!TAILQ_EMPTY(&r->pending)) {
+		elem = TAILQ_FIRST(&r->pending);
+		path = elem->path;
+		data = elem->data;
+		r->depth = elem->depth;
+		TAILQ_REMOVE(&r->pending, elem, entry);
+		free(elem);
+		recurse(path, data, r);
+		free(path);
+	}
+
+	while (r->hist) {
+		h = r->hist;
+		r->hist = r->hist->prev;
+		free(h);
+	}
 }
